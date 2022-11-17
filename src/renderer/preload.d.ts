@@ -9,7 +9,7 @@ declare global {
           channel: Channels,
           func: (...args: unknown[]) => void
         ): (() => void) | undefined;
-        once(channel: Channels, func: (...args: unknown[]) => void): void;
+        once(channel: Channels, func: (args:String) => void): void;
       };
     };
   }

@@ -1,35 +1,54 @@
-/* eslint global-require: off, no-console: off, promise/always-return: off */
-
-/**
- * This module executes inside of electron's main process. You can start
- * electron renderer process from here and communicate with the other processes
- * through IPC.
- *
- * When running `npm run build` or `npm run build:main`, this file is compiled to
- * `./src/main.js` using webpack. This gives us some performance wins.
- */
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
-import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import Store from 'electron-store';
 
-class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-}
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
+const store = new Store();
+//Handling IPC here
+ipcMain.on('ipc-calculator', async (event, arg) => {
+  let formula = arg[0]
+  formula
+  formula = formula.replace('x','*').replace('÷','/').replace(/[^-()\d/*+%.]/g, ''); //sanitizing the formula
+  let result = Function("'use strict'; return "+formula)() // NOT USING eval() due to security reasons
+  console.log(`[DEBUG] Calculating ${formula} = ${result}`);
+  event.sender.send('ipc-calculator',result);
+
+  //saving history
+  let history = store.get('history')
+  console.log(history)
+  if(history == undefined){
+    console.log('[DEBUG] Initializing storage.')
+    store.set("history",[{formula:formula,result:result}])
+  }else{
+    console.log("[DEBUG] Updating the history. ")
+    store.set("history",[{formula:formula,result:result}].concat(history))
+  }
 });
+ipcMain.on('ipc-history', async (event, arg) => {
+  let history = store.get('history')
+  event.sender.send('ipc-history',history);
+});
+ipcMain.on('ipc-change-bg-color', async (event, arg) => {
+  let theme = store.get('theme')
+  if(theme==undefined){
+    store.set('theme','blue')
+    event.sender.send('ipc-change-bg-color','blue')
+  }
+  if(arg[0]=="set"){//saving a new theme
+  console.log(theme)
+  store.set('theme',arg[1])
+  event.sender.send('ipc-change-bg-color',arg[1])
+  }else{//fetching the current theme infos
+    event.sender.send('ipc-change-bg-color',store.get('theme'))
+  }
+});
+
+
+
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -71,10 +90,14 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 450,
+    height: 725,
+    resizable: false,
+    autoHideMenuBar: true,
     icon: getAssetPath('icon.png'),
     webPreferences: {
+      nodeIntegration:false,
+      devTools: false,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
@@ -107,9 +130,6 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  // Remove this if your app does not use auto updates
-  // eslint-disable-next-line
-  new AppUpdater();
 };
 
 /**
@@ -117,8 +137,6 @@ const createWindow = async () => {
  */
 
 app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -129,8 +147,6 @@ app
   .then(() => {
     createWindow();
     app.on('activate', () => {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
     });
   })

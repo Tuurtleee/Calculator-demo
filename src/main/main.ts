@@ -30,7 +30,11 @@ ipcMain.on('ipc-calculator', async (event, arg) => {
 });
 ipcMain.on('ipc-history', async (event, arg) => {
   let history = store.get('history')
-  event.sender.send('ipc-history',history);
+  console.log(history);
+  if(history==undefined){
+    store.set('history',[])
+    event.sender.send('ipc-history',[])
+  } else event.sender.send('ipc-history',history);
 });
 ipcMain.on('ipc-change-bg-color', async (event, arg) => {
   let theme = store.get('theme')

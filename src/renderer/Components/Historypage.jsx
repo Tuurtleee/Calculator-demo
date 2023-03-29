@@ -25,11 +25,22 @@ export default function Historypage({page,setPage}) {
 </svg>
 
         </div>
-        <div className="res-cont">
-          {history.map((entry,i)=>{
-            return (< Historyelement el={entry} key={i} />)
-          })}
-        </div>
+        {history.length > 0 ? (
+  <div className="res-cont">
+    {history.map((entry, i) => {
+      return <Historyelement el={entry} key={i} />;
+    })}
+  </div>
+) : (
+  <h3 css={css`
+  text-align: center;
+  color: #00314B;
+  font-weight: 700;
+  margin: 20px 0;
+
+  `}>Your history is empty...</h3>
+)}
+
       </div>
     );
   }

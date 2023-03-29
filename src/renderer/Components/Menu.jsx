@@ -16,16 +16,18 @@ export default function Menu() {
         }
       })
   })
-  const [page,setPage]=useState('home')
-    return (
-      <div css={css`
-    width:100vw;
-    padding:22px 0;
-    background: ${theme};
-  `}>
-      {page=='home' && <Calculator setPage={setPage}/>}
-      {page=="history" && <Historypage setPage={setPage} page={page} />}
-    </div>
+  const [page,setPage]=useState('home');
 
-    );
+  const containerStyles = css`
+  width: 100vw;
+  min-height: 100vh;
+  padding: 22px 0;
+  background: ${theme};
+`;
+return (
+  <div css={containerStyles} className="cont">
+    {page=='home' && <Calculator setPage={setPage}/>}
+    {page=="history" && <Historypage setPage={setPage} page={page} />}
+  </div>
+);
   }

@@ -17,16 +17,19 @@ ipcMain.on('ipc-calculator', async (event, arg) => {
   console.log(`[DEBUG] Calculating ${formula} = ${result}`);
   event.sender.send('ipc-calculator',result);
 
-  //saving history
-  let history = store.get('history')
-  console.log(history)
-  if(history == undefined){
-    console.log('[DEBUG] Initializing storage.')
-    store.set("history",[{formula:formula,result:result}])
-  }else{
-    console.log("[DEBUG] Updating the history. ")
-    store.set("history",[{formula:formula,result:result}].concat(history))
+//saving history
+let history = store.get('history')
+if (history === undefined) {
+  console.log('[DEBUG] Initializing storage.')
+  store.set('history', [{ formula: formula, result: result }])
+} else {
+  console.log('[DEBUG] Updating the history.')
+  const newHistory = [{ formula: formula, result: result }]
+  if (Array.isArray(history)) {
+    newHistory.push(...history)
   }
+  store.set('history', newHistory)
+}
 });
 ipcMain.on('ipc-history', async (event, arg) => {
   let history = store.get('history')
@@ -93,7 +96,6 @@ const createWindow = async () => {
   };
 
   mainWindow = new BrowserWindow({
-    show: false,
     width: 450,
     height: 725,
     resizable: false,
